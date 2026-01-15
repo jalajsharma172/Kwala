@@ -48,6 +48,7 @@ graph TD
 
 4.  **Stop Bitcoin Core (Regtest)**:
     ```bash
+    pkill -9 bitcoind
     bitcoin-cli -regtest stop
     ```
 
