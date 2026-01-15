@@ -10,8 +10,6 @@ The system runs on **Bitcoin Regtest** (Regression Test Network) for easy develo
 
 ## Architecture
 
-![Architecture Diagram](./image.png)
-
 ```mermaid
 graph TD
     A[Stratum V1 Miner] -->|TCP 3333| B(Stratum V1 Server)
@@ -48,6 +46,11 @@ graph TD
     *   **V1 Miner**: `node test_miner.js`
     *   **V2 Miner**: `node test/sv2_test_client.js`
 
+4.  **Stop Bitcoin Core (Regtest)**:
+    ```bash
+    bitcoin-cli -regtest stop
+    ```
+
 ## Verification of Payouts
 
 When the **V2 Miner** finds a "block" (forced via magic nonce `deadbeef` on regtest):
@@ -64,6 +67,30 @@ When the **V2 Miner** finds a "block" (forced via magic nonce `deadbeef` on regt
 [Solana Bridge] 💰  Amount:    5000000000 sats (50 zBTC)
 [Solana Bridge] ✅  MINT SUCCESS: Signature ...
 ```
+
+## Project Structure
+
+```text
+axon/
+└── pool/
+    ├── src/
+    │   ├── job_api.js               # Central mining logic (brain)
+    │   ├── jobs.js                  # Block template handling
+    │   ├── rewards.js               # Reward calculation
+    │   ├── rpc.js                   # Bitcoin RPC wrapper
+    │   ├── server.js                # Entry point
+    │   ├── shares.js                # Share validation
+    │   ├── solana_bridge_sim.js     # Simulated Solana payout
+    │   ├── stratum.js               # Stratum V1 server
+    │   └── stratum_v2_translator.js # Stratum V2 (simulated JSON-over-TCP)
+    ├── test/
+    │   └── sv2_test_client.js       # Simulated V2 miner
+    ├── config.json
+    ├── package.json
+    ├── README.md
+    └── test_miner.js                # Simulated V1 miner
+```
+
 
 ## Key Files
 - `src/job_api.js`: The brain. Decouples protocol from logic.
