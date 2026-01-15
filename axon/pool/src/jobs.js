@@ -164,7 +164,8 @@ class JobManager {
             nTime: tmpl.curtime,
             cleanJobs: true,
             transactions: tmpl.transactions,
-            target: tmpl.target
+            target: tmpl.target,
+            height: tmpl.height // FIX: Ensure height is passed
         };
     }
 

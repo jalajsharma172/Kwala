@@ -1,16 +1,16 @@
 {
     "rpc": {
         "host": "127.0.0.1",
-        "port": 18443,
+        "port": 18332,
         "user": "axonrpc",
         "password": "axonrpcpassword"
     },
     "pool": {
         "port": 3333,
-        "address": "bcrt1q8y7qms55g9ampdv6dcdukut07zsgxqurptsz6l"
+        "address": "tb1qjphpl7wn926wz6yyaz2x5ttearnnypa7nhyxfe"
     },
     "coinbase": {
         "aux_data": "AxonPool"
     },
-    "network": "regtest"
+    "network": "testnet"
 }

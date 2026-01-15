@@ -1,8 +1,8 @@
 # Axon-like Mining Pool Walkthrough
 
 ## Overview
-This project implements a custom Bitcoin Mining Pool from scratch (Node.js) that supports:
-1.  **Stratum V1 Miners** (Legacy support).
+This project implements a custom Bitcoin Mining Pool from scratch (Node.js) that runs on **Bitcoin Testnet** and supports:
+1.  **Stratum V1 Miners** (Real world miners like `cpuminer`).
 2.  **Stratum V2 Miners** (Simulated Architecture).
 3.  **Instant Solana Payouts** (Simulated "zBTC" Minting when a block is found).
 
@@ -12,7 +12,7 @@ The system runs on **Bitcoin Regtest** (Regression Test Network) for easy develo
 
 ```mermaid
 graph TD
-    A[Stratum V1 Miner] -->|TCP 3333| B(Stratum V1 Server)
+    A[cpuminer (Stratum V1)] -->|TCP 3333| B(Stratum V1 Server)
     C[Stratum V2 Miner] -->|TCP 3334| D(Stratum V2 Translator)
     
     B --> E[Job API]
@@ -31,9 +31,9 @@ graph TD
 
 ## Setup & Running
 
-1.  **Start Bitcoin Core (Regtest)**:
+34.  **Start Bitcoin Core (Testnet)**:
     ```bash
-    bitcoind -regtest -daemon
+    bitcoind -testnet -daemon
     ```
 
 2.  **Start the Pool**:
@@ -42,14 +42,20 @@ graph TD
     npm start
     ```
 
-3.  **Run Simulated Miners**:
+3.  **Run CPU Miner (Real Testnet Miner)**:
+    Since the pool runs on Windows and you are in WSL, use your Windows IP (e.g., `172.17.176.1` or `192.168.x.x`):
+    ```bash
+    ./cpuminer -a sha256d -o stratum+tcp://172.17.176.1:3333 -u miner1 -p x
+    ```
+    *Note: Replace `172.17.176.1` with your actual Windows IP if different.*
+
+4.  **Simulated Miners (Optional Verification)**:
     *   **V1 Miner**: `node test_miner.js`
     *   **V2 Miner**: `node test/sv2_test_client.js`
 
-4.  **Stop Bitcoin Core (Regtest)**:
+5.  **Stop Bitcoin Core (Testnet)**:
     ```bash
-    pkill -9 bitcoind
-    bitcoin-cli -regtest stop
+    bitcoin-cli -testnet stop
     ```
 
 ## Verification of Payouts

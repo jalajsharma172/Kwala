@@ -10,7 +10,7 @@ class StratumServer {
 
     start() {
         this.server.listen(config.pool.port, () => {
-            console.log(`Stratum Server listening on port ${config.pool.port}`);
+            console.log(`Stratum Server listening on port ${config.pool.port} (${config.network})`);
         });
     }
 
