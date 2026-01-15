@@ -1,5 +1,6 @@
 const jobs = require('./jobs');
-const stratum = require('./stratum');
+const stratumV1 = require('./stratum'); // Renamed for clarity, or keep as stratum
+const stratumV2 = require('./stratum_v2_translator');
 const config = require('../config.json');
 
 async function main() {
@@ -10,8 +11,9 @@ async function main() {
         // 1. Initialize Job Manager (Connects to RPC, validates address)
         await jobs.init();
 
-        // 2. Start Stratum Server
-        stratum.start();
+        // 2. Start Stratum Servers
+        stratumV1.start(); // Port 3333
+        stratumV2.start(); // Port 3334
 
         // 3. Main Loop: Poll for new block templates
         console.log('Starting Block Template Polling...');
@@ -24,7 +26,8 @@ async function main() {
                 if (newJob) {
                     // New Block detected or first job
                     console.log(`Broadcasting Job: ${newJob.jobId}`);
-                    stratum.broadcastJob(newJob);
+                    stratumV1.broadcastJob(newJob);
+                    stratumV2.broadcastJob(newJob);
                 }
             } catch (e) {
                 console.error('Error in main polling loop:', e);

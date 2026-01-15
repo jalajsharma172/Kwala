@@ -1,4 +1,5 @@
 const BigNumber = require('bignumber.js');
+const solanaBridge = require('./solana_bridge_sim');
 
 class RewardManager {
     constructor() {
@@ -15,18 +16,28 @@ class RewardManager {
         this.totalShares++;
     }
 
-    handleBlockFound(minerId, blockReward, fees) {
+    // We need to access miner metadata (solanaAddress). Circular dependency?
+    // rewards.js is imported by job_api.js.
+    // If we import job_api here, it might be circular.
+    // Alternative: Pass the miners list or callback from job_api to handleBlockFound.
+    // OR: job_api calls handleBlockFound and passes `minerObject`?
+    // Currently job_api calls: shares.validateShare -> rewards.addShare.
+    // rewards.handleBlockFound is called by shares.js? (Let's check shares.js)
+    // shares.js calls `rewards.handleBlockFound`.
+    // Better: rewards.js should remain "Accounting". A higher level controller (job_api?) handles the Payout trigger?
+    // OR: Lazy import inside the method?
+    // Let's pass the address map to handleBlockFound for now, OR rely on a callback.
+    // Simplest for MVP: require job_api inside the method (Lazy load) to avoid top-level circle.
+
+    async handleBlockFound(minerId, blockReward, fees) {
         // Block Reward is usually 50 BTC (Regtest) or subsidy.
         // For MVP, simplistic proportional distribution for the round.
 
-        // reward = (shares / total) * (subsidy + fees)
-        // Ignoring fees for MVP simplicity or assume included in total.
-
         console.log(`Calculating rewards. Total Shares: ${this.totalShares}`);
 
-        // Convert blockReward to Satoshis? blockReward input is usually BTC?
-        // Or in jobs.js we saw `coinbasevalue` (satoshis).
-        // Let's assume input is Satoshis.
+        // Lazy load jobApi to avoid circular dependency
+        const jobApi = require('./job_api');
+
         const totalReward = new BigNumber(5000000000); // 50 BTC Regtest default
 
         for (const [mid, count] of Object.entries(this.currentRoundShares)) {
@@ -38,6 +49,13 @@ class RewardManager {
             }
             this.balances[mid] = this.balances[mid].plus(userReward);
             console.log(`Miner ${mid} earned ${userReward.toString()} sats`);
+
+            // Check for Solana Address
+            const minerData = jobApi.miners[mid];
+            if (minerData && minerData.solanaAddress) {
+                // Trigger Instant Payout simulation
+                await solanaBridge.mintZBTC(minerData.solanaAddress, userReward.toNumber());
+            }
         }
 
         // Reset Round

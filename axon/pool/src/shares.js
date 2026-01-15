@@ -87,6 +87,19 @@ class ShareManager {
 
         const hashNum = new BigNumber(blockHashHex, 16);
 
+        // --- TEST HOOK FOR REGTEST ---
+        if (config.network === 'regtest' && nonce.toLowerCase() === 'deadbeef') {
+            console.log('TEST MODE: Forcing Block Found event for nonce deadbeef');
+            // Simulate block found
+            // In real flow, we submit to Core. Here we just trigger Rewards.
+            // We need await here? validateShare is async? No, it's sync in previous code.
+            // rewards.handleBlockFound is async.
+            rewards.addShare(miner.id); // Add share first
+            rewards.handleBlockFound(miner.id, 5000000000);
+            return { valid: true, blockFound: true };
+        }
+        // -----------------------------
+
         // 5. Check Pool Target
         if (hashNum.gt(this.poolTarget)) {
             // Hash MUST be less than target.
