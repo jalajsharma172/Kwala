@@ -1,0 +1,197 @@
+STEP 4 — BITCOIN TESTNET VALIDATION (ON-CHAIN CONNECTIVITY)
+
+Overview
+
+This step validates that the mining pool is connected to the REAL Bitcoin Testnet and is participating in public, on-chain Bitcoin activity. Unlike regtest, Bitcoin Testnet is a globally shared network with real peers, blocks, and transactions that are visible on public explorers.
+
+Successfully completing this step proves that the pool architecture is not theoretical or local-only, but fully capable of operating on a real Bitcoin network.
+
+Why This Step Matters
+
+Bitcoin Regtest:
+
+Fully local
+
+Deterministic
+
+Invisible to the outside world
+
+Ideal for development and testing
+
+Bitcoin Testnet:
+
+Public peer-to-peer network
+
+Real consensus rules
+
+Blocks and transactions visible globally
+
+Demonstrates real on-chain behavior
+
+Connecting to Testnet proves that:
+
+The pool can communicate with real Bitcoin nodes
+
+Block data and headers are synchronized from the network
+
+The architecture works beyond a simulated environment
+
+Step 4 Objectives
+
+The goal of Step 4 is to confirm:
+
+Bitcoin Core is running in TESTNET mode
+
+The node is using the correct testnet data directory
+
+The node is connected to real public peers
+
+Live blockchain data is being exchanged
+
+On-chain activity is observable and verifiable
+
+Testnet Configuration Validation
+
+Bitcoin Core was started explicitly in testnet mode:
+
+bitcoind -testnet -daemon
+
+Verification command:
+
+bitcoin-cli -testnet getblockchaininfo
+
+Expected result:
+
+"chain": "test"
+
+This confirms the node is running on Bitcoin Testnet and not regtest or mainnet.
+
+Testnet Data Directory Verification
+
+Bitcoin Core maintains separate directories for each network.
+
+For testnet, the active directory is:
+
+~/.bitcoin/testnet3/
+
+The presence of the following confirms correct setup:
+
+blocks/
+
+chainstate/
+
+debug.log
+
+wallets/
+
+This ensures:
+
+No overlap with regtest data
+
+Independent blockchain state
+
+Clean separation of environments
+
+Live Network Connectivity (Key Validation)
+
+The most important confirmation is real peer connectivity.
+
+Live logs were monitored using:
+
+tail -f ~/.bitcoin/testnet3/debug.log
+
+Observed indicators of real network participation:
+
+Outbound and inbound peer connections
+
+Header synchronization messages
+
+UpdateTip events
+
+Remote peer IP addresses
+
+Continuous blockchain activity
+
+These logs demonstrate that the node is actively communicating with the public Bitcoin Testnet.
+
+Peer Count Verification
+
+Network connectivity was quantitatively verified using:
+
+bitcoin-cli -testnet getpeerinfo | wc -l
+
+A peer count greater than zero confirms:
+
+Successful peer discovery
+
+Active participation in the testnet P2P network
+
+Readiness for mining and block submission
+
+On-Chain Visibility Confirmation
+
+Because this is Bitcoin Testnet:
+
+Blocks mined by this node will be broadcast to public peers
+
+Transactions and blocks can be viewed on public explorers such as:
+
+mempool.space/testnet
+
+blockstream.info/testnet
+
+This enables judges and reviewers to independently verify:
+
+Block hashes
+
+Coinbase transactions
+
+Mining addresses
+
+Network acceptance
+
+Outcome of Step 4
+
+After completing Step 4, the system has achieved:
+
+Real Bitcoin Testnet connectivity
+
+Public, on-chain participation
+
+Observable blockchain synchronization
+
+Verified readiness for real testnet mining
+
+This step bridges the gap between local simulation (regtest) and real blockchain infrastructure.
+
+Why This Is Important for the Project
+
+Completing Step 4 proves that:
+
+The mining pool architecture is production-realistic
+
+The system is not limited to local testing
+
+The same codebase can operate on real networks
+
+On-chain behavior is verifiable and transparent
+
+This validation strengthens the credibility of the project and demonstrates real-world applicability.
+
+Next Steps
+
+After Step 4, the system is ready for:
+
+Testnet wallet creation
+
+Real testnet mining
+
+Block reward attribution
+
+Public on-chain demonstrations
+
+Integration with real miners
+
+
+
+//Prepare a demo script that switches between regtest and testnet safely

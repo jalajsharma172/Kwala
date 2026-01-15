@@ -1,0 +1,8 @@
+Where we are now (checkpoint)
+
+✅ Step 4 complete (testnet connectivity)
+✅ Wallet exists
+⏳ Wallet just needs to be loaded
+🔜 Address generation
+🔜 Pool coinbase wiring
+🔜 Real testnet mining
