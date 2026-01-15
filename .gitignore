@@ -1,0 +1,9 @@
+node_modules/
+*.log
+.env
+axon-wallet.json
+wallet_address.txt
+solana_info.json
+tmp/
+dist/
+.DS_Store

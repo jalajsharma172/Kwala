@@ -1,0 +1,22 @@
+{
+    "rpc": {
+        "host": "127.0.0.1",
+        "port": 18332,
+        "user": "axonrpc",
+        "password": "axonrpcpassword"
+    },
+    "pool": {
+        "port": 3333,
+        "address": "tb1qjphpl7wn926wz6yyaz2x5ttearnnypa7nhyxfe"
+    },
+    "coinbase": {
+        "aux_data": "AxonPool"
+    },
+    "solana": {
+        "network": "devnet",
+        "rpcUrl": "https://api.devnet.solana.com",
+        "payerKeypairFile": "axon-wallet.json",
+        "tokenMint": "F9GgGxst6S3yo5qWghCL27HnkxyBcp7UQq3rQygUWx7i"
+    },
+    "network": "testnet"
+}
