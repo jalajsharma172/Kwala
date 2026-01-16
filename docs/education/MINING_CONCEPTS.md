@@ -90,3 +90,24 @@ This is the most critical and confusing concept. Think of it as a **Limbo Bar**.
        v
 [ CPU Miner ]    --> "I found a Share!" (Partial Solution)
 ```
+
+---
+
+## 4. The Reward Scenario (Who gets paid?)
+
+**Question**: *If 5 miners work for 10 days and stop, and then 2 new miners start on Day 11 and find a block, who gets the money?*
+
+This depends on the **Payout Scheme**:
+
+### 🍰 Proportional (PROP)
+*   The pool looks at **every share** submitted since the *last* block found.
+*   **Result**: The 5 miners from Days 1-10 did 99% of the work.
+*   **Payout**: The 5 old miners get 99% of the reward (even if offline). The 2 new miners get almost nothing.
+
+### ⏱️ Pay Per Last N Shares (PPLNS) (Currently Used)
+*   The pool only counts the **Total Last X Shares** (the most recent work).
+*   **Result**: The old work from Days 1-10 might have "expired" or been pushed out of the window.
+*   **Payout**: The 2 active miners likely get the majority of the reward because they are doing the work *now*.
+
+**Axon Pool Note**: Currently, we use a simple memory-based tracker. If the server restarts, old shares are lost, 
+acting more like PPLNS where only recent/active miners get paid.
