@@ -1,4 +1,5 @@
 const jobs = require('./jobs');
+const shares = require('./shares');
 const stratumV1 = require('./stratum'); // Renamed for clarity, or keep as stratum
 const stratumV2 = require('./stratum_v2_translator');
 const solanaBridge = require('./solana_bridge');
@@ -29,7 +30,7 @@ async function main() {
             const currentJob = jobs.currentJob || {};
             res.json({
                 miners: stratumV1.miners.length + stratumV2.miners.length,
-                hashrate: "100 H/s", // Simulated/Static for MVP
+                hashrate: shares.getPoolHashrate(),
                 blockHeight: currentJob.height || 0,
                 lastJobId: currentJob.jobId || null,
                 network: config.network,

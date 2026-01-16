@@ -8,11 +8,49 @@ const config = require('../config.json');
 class ShareManager {
     constructor() {
         // Pool Difficulty (Static for now)
-        // Difficulty 1 Target (approx): 0x00000000FFFF0000000000000000000000000000000000000000000000000000
-        // Regtest allows easier targets.
-        // We use a BigNumber for the target.
-        // Hardcoded diff 1 for simplicity or read from config.
-        this.poolTarget = new BigNumber('00000000FFFF0000000000000000000000000000000000000000000000000000', 16);
+        // Pool Difficulty (Static for now)
+        // We set this VERY EASY so cpu miners submit shares frequently for hashrate tracking.
+        // Target: 00FFFF... (Higher = Easier)
+        this.poolTarget = new BigNumber('00FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF', 16);
+
+        // Hashrate Tracking
+        this.shareHistory = [];
+    }
+
+    getPoolHashrate() {
+        // 1. Cleanup old shares (keep last 10 mins)
+        const now = Date.now();
+        const windowMs = 10 * 60 * 1000;
+        this.shareHistory = this.shareHistory.filter(s => now - s.time < windowMs);
+
+        if (this.shareHistory.length < 2) return "0 H/s";
+
+        // 2. Calculate Hashrate over the actual window of shares
+        // Use a shorter window for "Instant" hashrate display, e.g., last 1 minute
+        const instantWindowMs = 60 * 1000;
+        const recentShares = this.shareHistory.filter(s => now - s.time < instantWindowMs);
+
+        if (recentShares.length === 0) return "0 H/s";
+
+        // Total Difficulty (Sum of diffs of shares)
+        // Our Pool Target is much easier than Diff 1.
+        // Estimation: Hashrate = (Shares * AverageHashesPerShare) / TimeSeconds
+        // AverageHashesPerShare = 2^256 / Target
+
+        const target = this.poolTarget;
+        const totalSpace = new BigNumber(2).pow(256);
+        const hashesPerShare = totalSpace.dividedBy(target);
+
+        const totalHashes = new BigNumber(recentShares.length).multipliedBy(hashesPerShare);
+
+        // Time span in seconds (assume 60s window if filtered)
+        const hashRate = totalHashes.dividedBy(60);
+
+        // Format
+        if (hashRate.lt(1000)) return `${hashRate.toFixed(0)} H/s`;
+        if (hashRate.lt(1000000)) return `${hashRate.dividedBy(1000).toFixed(2)} KH/s`;
+        if (hashRate.lt(1000000000)) return `${hashRate.dividedBy(1000000).toFixed(2)} MH/s`;
+        return `${hashRate.dividedBy(1000000000).toFixed(2)} GH/s`;
     }
 
     validateShare(miner, jobId, extraNonce2, nTime, nonce) {
@@ -108,6 +146,7 @@ class ShareManager {
 
         // Log Share
         rewards.addShare(miner.id);
+        this.shareHistory.push({ time: Date.now(), difficulty: 1 });
 
         // 6. Check Network Target (Block Found!)
         const networkTarget = new BigNumber(job.target, 16);

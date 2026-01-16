@@ -2,6 +2,8 @@
 
 This guide covers everything you need to start mining on the **Axon Pool** (Bitcoin Testnet) and receiving **Solana (zBTC)** rewards.
 
+> **💡 New to Mining?** [Read "Mining 101: Understanding the Concepts"](education/MINING_CONCEPTS.md) first!
+
 ## Prerequisites
 
 1.  **A Computer**: Windows (WSL), Linux, or macOS.
