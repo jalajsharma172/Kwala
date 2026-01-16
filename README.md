@@ -12,21 +12,21 @@ The system runs on **Bitcoin Regtest** (Regression Test Network) for easy develo
 
 ```mermaid
 graph TD
-    A[cpuminer (Stratum V1)] -->|TCP 3333| B(Stratum V1 Server)
-    C[Stratum V2 Miner] -->|TCP 3334| D(Stratum V2 Translator)
+    A["cpuminer (Stratum V1)"] -->|TCP 3333| B("Stratum V1 Server")
+    C["Stratum V2 Miner"] -->|TCP 3334| D("Stratum V2 Translator")
     
-    B --> E[Job API]
+    B --> E["Job API"]
     D --> E
     
-    E --> F[Job Manager]
-    E --> G[Share Validator]
-    E --> H[Reward Manager]
+    E --> F["Job Manager"]
+    E --> G["Share Validator"]
+    E --> H["Reward Manager"]
     
-    F -->|RPC| I[Bitcoin Core Node]
+    F -->|RPC| I["Bitcoin Core Node"]
     G -->|Block Submission| I
     
-    H --> J[Solana Bridge Sim]
-    J -->|Log| K[Mint zBTC]
+    H --> J["Solana Bridge Sim"]
+    J -->|Log| K["Mint zBTC"]
 ```
 
 ## Setup & Running
