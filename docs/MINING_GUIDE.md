@@ -11,14 +11,19 @@ This guide covers everything you need to start mining on the **Axon Pool** (Bitc
 
 ---
 
-## 1. Setting Up Bitcoin Core (Testnet)
+## 1. Setting Up Bitcoin Core (Testnet) (Optional) ( Only Required if you want to run the pool yourself)
 
 If you are hosting the pool, you need a Bitcoin Core node.
 
 1.  **Download & Install**: [https://bitcoin.org/en/download](https://bitcoin.org/en/download)
 2.  **Configuration**: Create a file named `bitcoin.conf` in your Bitcoin data directory:
-    *   **Windows**: `%APPDATA%\Bitcoin\bitcoin.conf`
-    *   **Linux/WSL**: `~/.bitcoin/bitcoin.conf`
+    *   **Windows**: `%APPDATA%\Bitcoin\bitcoin.conf`           # 'Windows + R'
+    *   **Linux/WSL**: `~/.bitcoin/bitcoin.conf` 
+    
+    > **Command to open in WSL:**
+    > ```bash
+    > mkdir -p ~/.bitcoin && nano ~/.bitcoin/bitcoin.conf
+    > ```
 
     **Add the following content:**
     ```ini
@@ -34,7 +39,8 @@ If you are hosting the pool, you need a Bitcoin Core node.
     rpcallowip=0.0.0.0/0
     
     # Mining
-    txindex=1
+    prune=550                   # Minimum = ~550 MB for blocks → total ~2-4 GB
+    dbcache=100                 # Optional: lower memory usage during sync (good for laptop)
     ```
 
 3.  **Start the Node**:
@@ -86,6 +92,11 @@ Once you have the miner installed, you can connect to the pool.
 *   **Username**: Your Mining ID (arbitrary)
 *   **Password**: **CRITICAL** - This determines your Payout Address.
 
+**Example Configuration:**
+*   **URL**: `stratum+tcp://127.0.0.1:3333`
+*   **User**: `Worker1`
+*   **Password**: `x,solanaAddress=C7U4EaBhqxswvihnr6zjFUsy57qvDNYpsboCLHAbBRtC`
+
 ### The Password Format
 To receive payouts on Solana, you must provide your **Solana Wallet Address** in the password field using a special tag.
 
@@ -93,6 +104,10 @@ To receive payouts on Solana, you must provide your **Solana Wallet Address** in
 
 *   `x`: Standard password placeholder (ignored).
 *   `solanaAddress=...`: Your Devnet Wallet Address.
+
+**Examples:**
+1.  `x,solanaAddress=C7U4EaBhqxswvihnr6zjFUsy57qvDNYpsboCLHAbBRtC`
+2.  `mySecretPass,solanaAddress=AwesomewalletAddressSoLana12345`
 
 ### Starting the Miner (Command)
 
