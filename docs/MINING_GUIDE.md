@@ -17,7 +17,7 @@ If you are hosting the pool, you need a Bitcoin Core node.
 
 1.  **Download & Install**: [https://bitcoin.org/en/download](https://bitcoin.org/en/download)
 2.  **Configuration**: Create a file named `bitcoin.conf` in your Bitcoin data directory:
-    *   **Windows**: `%APPDATA%\Bitcoin\bitcoin.conf`           # 'Windows + R'
+    *   **Windows**: `%APPDATA%\Bitcoin\bitcoin.conf`           By 'Windows + R'
     *   **Linux/WSL**: `~/.bitcoin/bitcoin.conf` 
     
     > **Command to open in WSL:**
@@ -116,7 +116,7 @@ To receive payouts on Solana, you must provide your **Solana Wallet Address** in
 *   If running from WSL to Windows: Use your Windows IP (e.g., `172.x.x.x`).
 
 ```bash
-./minerd -a sha256d -o stratum+tcp://<POOL_IP>:3333 -u MyMiner01 -p x,solanaAddress=C7U4EaBhqxswvihnr6zjFUsy57qvDNYpsboCLHAbBRtC
+./cpuminer -a sha256d -o stratum+tcp://<POOL_IP>:3333 -u Worker1 -p x,solanaAddress=C7U4EaBhqxswvihnr6zjFUsy57qvDNYpsboCLHAbBRtC
 ```
 
 **Example Output:**
@@ -125,6 +125,9 @@ To receive payouts on Solana, you must provide your **Solana Wallet Address** in
 [2026-01-16 10:00:01] Stratum detected new block
 [2026-01-16 10:00:02] Thread 1: hash: ... (accepted!)
 ```
+
+![Starting Mining](../images/Starting_Mining.png)
+
 
 ---
 
