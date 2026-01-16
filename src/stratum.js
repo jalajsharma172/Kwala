@@ -131,11 +131,36 @@ class StratumServer {
         miner.authorized = success;
         console.log(`Miner authorized: ${username} (ID: ${miner.apiMinerId})`);
 
-        // Send Current Job Immediately
-        const currentJob = jobApi.getJobForMiner(miner.apiMinerId);
-        if (currentJob) {
-            this.sendJobToMiner(miner, currentJob);
-        }
+        // Send Difficulty (Required by most miners)
+        // Difficulty 1 = Target 00000000FFFF.... (Standard)
+        // Since we set poolTarget to ALL Fs (Max), that is Diff ~0.000000001 (It's effectively 1/2^32 if we consider standard diff 1 as 2^32 works)
+        // Actually, Difficulty 1 usually corresponds to a high target (0x00000000FFFF0000000000000000000000000000000000000000000000000000)
+        // Our pool target is *even easier* (starts with F after my change). 
+        // Let's send a very small difficulty or just 1.
+
+        miner.authorized = success;
+        console.log(`Miner authorized: ${username} (ID: ${miner.apiMinerId})`);
+
+        // Send Success FIRST (by returning it, the caller writes it)
+        // We use setImmediate to send the rest AFTER the response is written to the socket.
+        setImmediate(() => {
+            if (!miner.socket.writable) return;
+
+            // Send Low Difficulty for CPU Miners
+            const difficulty = 0.0001;
+            const diffNotify = {
+                id: null,
+                method: 'mining.set_difficulty',
+                params: [difficulty]
+            };
+            miner.socket.write(JSON.stringify(diffNotify) + '\n');
+
+            // Send Current Job
+            const currentJob = jobApi.getJobForMiner(miner.apiMinerId);
+            if (currentJob) {
+                this.sendJobToMiner(miner, currentJob);
+            }
+        });
 
         return { result: true, error: null, id: req.id };
     }

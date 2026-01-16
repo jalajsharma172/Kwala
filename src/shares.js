@@ -2,40 +2,63 @@ const crypto = require('crypto');
 const BigNumber = require('bignumber.js');
 const jobs = require('./jobs');
 const rpc = require('./rpc');
-const rewards = require('./rewards'); // We will create this next
+const rewards = require('./rewards');
 const config = require('../config.json');
 
 class ShareManager {
     constructor() {
         // Pool Difficulty (Static for now)
-        // Pool Difficulty (Static for now)
         // We set this VERY EASY so cpu miners submit shares frequently for hashrate tracking.
-        // Target: 00FFFF... (Higher = Easier)
-        this.poolTarget = new BigNumber('00FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF', 16);
+        // Target: FFFFF... (Difficulty 1 - Easiest)
+        this.poolTarget = new BigNumber('FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF', 16);
 
-        // Hashrate Tracking
-        this.shareHistory = [];
+        // Hashrate Tracking: minerId -> Array of timestamps
+        this.minerShares = {};
     }
 
     getPoolHashrate() {
         // 1. Cleanup old shares (keep last 10 mins)
         const now = Date.now();
         const windowMs = 10 * 60 * 1000;
-        this.shareHistory = this.shareHistory.filter(s => now - s.time < windowMs);
 
-        if (this.shareHistory.length < 2) return "0 H/s";
+        // Cleanup and calculate total raw hashrate
+        let totalHashrate = new BigNumber(0);
 
-        // 2. Calculate Hashrate over the actual window of shares
+        for (const minerId in this.minerShares) {
+            // Filter old shares for this miner
+            this.minerShares[minerId] = this.minerShares[minerId].filter(t => now - t < windowMs);
+
+            // If no shares left, optionally remove miner entry (or keep for history)
+            if (this.minerShares[minerId].length === 0) continue;
+
+            const minerRate = this.calculateMinerHashrate(minerId, now);
+            totalHashrate = totalHashrate.plus(minerRate);
+        }
+
+        // Format
+        if (totalHashrate.lt(1000)) return `${totalHashrate.toFixed(0)} H/s`;
+        if (totalHashrate.lt(1000000)) return `${totalHashrate.dividedBy(1000).toFixed(2)} KH/s`;
+        if (totalHashrate.lt(1000000000)) return `${totalHashrate.dividedBy(1000000).toFixed(2)} MH/s`;
+        return `${totalHashrate.dividedBy(1000000000).toFixed(2)} GH/s`;
+    }
+
+    calculateMinerHashrate(minerId, now = Date.now()) {
+        const shares = this.minerShares[minerId] || [];
+        if (shares.length < 2) return new BigNumber(0);
+
         // Use a shorter window for "Instant" hashrate display, e.g., last 1 minute
+        // But if shares are sparse, we might need a sliding window. 
+        // Let's use the actual time range of the recent shares for better accuracy per miner.
+
         const instantWindowMs = 60 * 1000;
-        const recentShares = this.shareHistory.filter(s => now - s.time < instantWindowMs);
+        const recentShares = shares.filter(t => now - t < instantWindowMs);
 
-        if (recentShares.length === 0) return "0 H/s";
+        if (recentShares.length === 0) return new BigNumber(0);
 
-        // Total Difficulty (Sum of diffs of shares)
-        // Our Pool Target is much easier than Diff 1.
-        // Estimation: Hashrate = (Shares * AverageHashesPerShare) / TimeSeconds
-        // AverageHashesPerShare = 2^256 / Target
+        // Hashrate = (Shares * DifficultyOfShare * 2^32?) 
+        // Actually: Hashrate = (Count * D * 2^32) / Time
+        // BUT our poolTarget is fixed.
+        // HashesPerShare = 2^256 / Target
 
         const target = this.poolTarget;
         const totalSpace = new BigNumber(2).pow(256);
@@ -43,14 +66,11 @@ class ShareManager {
 
         const totalHashes = new BigNumber(recentShares.length).multipliedBy(hashesPerShare);
 
-        // Time span in seconds (assume 60s window if filtered)
-        const hashRate = totalHashes.dividedBy(60);
+        // Time span: Max(60s, or actual time between first and last share if > 60?)
+        // Standard approach: Count / WindowSize.
+        // If we filter by 60s, divide by 60s.
 
-        // Format
-        if (hashRate.lt(1000)) return `${hashRate.toFixed(0)} H/s`;
-        if (hashRate.lt(1000000)) return `${hashRate.dividedBy(1000).toFixed(2)} KH/s`;
-        if (hashRate.lt(1000000000)) return `${hashRate.dividedBy(1000000).toFixed(2)} MH/s`;
-        return `${hashRate.dividedBy(1000000000).toFixed(2)} GH/s`;
+        return totalHashes.dividedBy(60);
     }
 
     validateShare(miner, jobId, extraNonce2, nTime, nonce) {
@@ -71,37 +91,16 @@ class ShareManager {
         let merkleRoot = coinbaseHash;
         for (const branchStepHex of job.merkleBranch) {
             const branchStep = Buffer.from(branchStepHex, 'hex');
-            // Stratum V1: Hash(Root + Step). 
-            // Since Coinbase is index 0.
             merkleRoot = this.doubleSha256(Buffer.concat([merkleRoot, branchStep]));
         }
 
         // 3. Construct Block Header
-        // Version (4 LE) | PrevHash (32 LE) | Root (32 LE) | Time (4 LE) | Bits (4 LE) | Nonce (4 LE)
-
         const versionBuf = Buffer.alloc(4);
         versionBuf.writeUInt32LE(job.version);
-
-        // PrevHash: stored as RPC Hex (Big Endian usually). Convert to LE.
         const prevHashBuf = Buffer.from(job.previousHash, 'hex').reverse();
-
-        // Root: Already LE? 
-        // Our calculation `doubleSha256` produces internal byte order (LE).
-        // So `merkleRoot` is LE.
-
         const timeBuf = Buffer.alloc(4);
-        // nTime is hex string (BE) from Stratum Submit? 
-        // Req params: nTime (hex).
-        // We need to write it LE.
         timeBuf.writeUInt32LE(parseInt(nTime, 16));
-
-        // Bits: hex string (BE) in Job. 
         const bitsBuf = Buffer.from(job.nBits, 'hex').reverse();
-        // Wait, nBits "1d00ffff" -> 0xffff001d LE.
-        // Is `job.nBits` stored as hex? Yes `tmpl.bits` (RPC) usually hex string (BE).
-        // Verify: RPC `bits`: "1d00ffff". 
-        // If we Reverse, we get "ffff001d". Correct.
-
         const nonceBuf = Buffer.alloc(4);
         nonceBuf.writeUInt32LE(parseInt(nonce, 16));
 
@@ -122,31 +121,24 @@ class ShareManager {
         // 4. Hash Header
         const blockHash = this.doubleSha256(header);
         const blockHashHex = blockHash.reverse().toString('hex'); // BE for display/comparison
-
         const hashNum = new BigNumber(blockHashHex, 16);
 
-
         // 5. Check Pool Target
-        if (hashNum.gt(this.poolTarget)) {
-            // Hash MUST be less than target.
-            // console.log(`Share rejected. Hash: ${blockHashHex} > PoolTarget`);
-
-            // Wait, for MVP debug on Regtest, difficulty is min.
-            // Regtest target is huge.
-            // User requested "Accurate per-miner share tracking".
-            // If checking against job.target (Network Target).
-        }
-
-        // Check validity against Pool Target
         const isShareValid = hashNum.lte(this.poolTarget);
         if (!isShareValid) {
             console.log(`Share invalid: ${blockHashHex}`);
             return { valid: false };
         }
 
-        // Log Share
-        rewards.addShare(miner.id);
-        this.shareHistory.push({ time: Date.now(), difficulty: 1 });
+        // Log Share per Miner
+        const minerId = miner.apiMinerId || miner.id || "unknown";
+        if (!this.minerShares[minerId]) {
+            this.minerShares[minerId] = [];
+        }
+        this.minerShares[minerId].push(Date.now());
+
+        rewards.addShare(minerId);
+
 
         // 6. Check Network Target (Block Found!)
         const networkTarget = new BigNumber(job.target, 16);
@@ -155,11 +147,9 @@ class ShareManager {
         if (isBlock) {
             console.log(`BLOCK FOUND! Hash: ${blockHashHex}`);
             this.submitBlock(header, coinbaseHex, job.transactions);
-            rewards.handleBlockFound(miner.wallet || miner.id, 50, 0); // Simplified reward
+            rewards.handleBlockFound(miner.wallet || minerId, 50, 0);
         }
 
-
-        // Return valid
         return { valid: true };
     }
 
@@ -169,20 +159,12 @@ class ShareManager {
     }
 
     async submitBlock(header, coinbaseHex, transactions) {
-        // Construct full block info
-        // Header (80)
-        // TxCount (VarInt)
-        // Coinbase
-        // Txs
-
         const txCount = transactions.length + 1;
-
         const blockBuf = Buffer.concat([
             header,
             this.varIntBuffer(txCount),
             Buffer.from(coinbaseHex, 'hex'),
-            ...transactions.map(t => Buffer.from(t.data, 'hex')) // 'data' is hex in getblocktemplate?
-            // Checking getblocktemplate: "data" key contains full tx hex. Yes.
+            ...transactions.map(t => Buffer.from(t.data, 'hex'))
         ]);
 
         const blockHex = blockBuf.toString('hex');
@@ -211,7 +193,6 @@ class ShareManager {
         }
         return Buffer.alloc(0);
     }
-
 }
 
 module.exports = new ShareManager();

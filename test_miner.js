@@ -65,38 +65,29 @@ client.on('data', (data) => {
             const nTimeRaw = msg.params[7]; // Hex string
             nTime = nTimeRaw;
 
-            // Simulate Mining (Submit a Fake Share)
-            // We just send random nonce to test "Reject" or "Accept" logic.
-            // But we want to test "Accept" ideally.
-            // Finding a valid share on Regtest is easy if difficulty is 1.
-            // But ShareManager uses difficulty 1 (Pool Target) which is easy-ish?
-            // Target: 0x00000000FFFF... (Note: This is actually quite hard for CPU script!)
-            // Wait, Standard diff 1 is 0x00000000FFFF... (32 bits zero). ~4 billion hashes.
-            // Regtest network target is easier (0x7fffff...)
-
-            // Let's modify ShareManager locally to have EASIER target for testing?
-            // Or just try to verify "Invalid Share" is handled correctly first.
-
-            setTimeout(() => {
-                const submitReq = {
-                    id: 4,
-                    method: 'mining.submit',
-                    params: [
-                        config.user,
-                        jobId,
-                        extraNonce2,
-                        nTime,
-                        "00000000" // Nonce
-                    ]
-                };
-                console.log('Submitting share...');
-                client.write(JSON.stringify(submitReq) + '\n');
-            }, 1000);
+            // Start mining loop if not already started
+            if (!this.miningInterval) {
+                this.miningInterval = setInterval(() => {
+                    const submitReq = {
+                        id: 4,
+                        method: 'mining.submit',
+                        params: [
+                            config.user,
+                            jobId,
+                            extraNonce2,
+                            nTime,
+                            "00000000" // Nonce
+                        ]
+                    };
+                    console.log('Submitting share...');
+                    client.write(JSON.stringify(submitReq) + '\n');
+                }, 2000); // Send share every 2 seconds
+            }
         }
 
         if (msg.id === 4) {
             console.log('Share Result:', msg.result ? 'ACCEPTED' : 'REJECTED', msg.error);
-            client.end(); // Close after one attempt
+            // client.end(); // DO NOT CLOSE
         }
     }
 });

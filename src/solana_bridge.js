@@ -21,33 +21,91 @@ class SolanaBridge {
         try {
             console.log(`[Solana Bridge] Connecting to ${config.solana.network}...`);
             console.log(`[Solana Bridge] CWD: ${process.cwd()}`);
-            // console.log(`[Solana Bridge] Files:`, fs.readdirSync('.'));
 
             this.connection = new Connection(config.solana.rpcUrl, 'confirmed');
 
-            // Load Wallet
-            const walletPath = config.solana.payerKeypairFile;
-            console.log(`[Solana Bridge] Checking wallet at: ${walletPath}`);
-            if (fs.existsSync(walletPath)) {
-                const secretKey = Uint8Array.from(JSON.parse(fs.readFileSync(config.solana.payerKeypairFile)));
-                this.wallet = Keypair.fromSecretKey(secretKey);
-                console.log(`[Solana Bridge] Loaded Payer: ${this.wallet.publicKey.toBase58()}`);
+            // --- DEV OVERRIDE: Load Temp Mint & Authority ---
+            // For zBTC feature, we use the temp_mint_info.json if it exists
+            const tempMintPath = 'web/temp_mint_info.json';
+            if (fs.existsSync(tempMintPath)) {
+                console.log(`[Solana Bridge] 🧪 Loading DEV Mint Info from ${tempMintPath}`);
+                const mintData = JSON.parse(fs.readFileSync(tempMintPath));
+                this.mintAddress = new PublicKey(mintData.mint);
+                this.wallet = Keypair.fromSecretKey(Uint8Array.from(mintData.secretKey));
+                this.decimals = 9; // Hardcoded for this dev flow
+                console.log(`[Solana Bridge] Loaded Dev Authority: ${this.wallet.publicKey.toBase58()}`);
+                console.log(`[Solana Bridge] Loaded Dev Mint: ${this.mintAddress.toBase58()}`);
             } else {
-                throw new Error(`Wallet file not found: ${config.solana.payerKeypairFile}`);
+                // Fallback to normal config
+                const walletPath = config.solana.payerKeypairFile;
+                console.log(`[Solana Bridge] Checking wallet at: ${walletPath}`);
+                if (fs.existsSync(walletPath)) {
+                    const secretKey = Uint8Array.from(JSON.parse(fs.readFileSync(config.solana.payerKeypairFile)));
+                    this.wallet = Keypair.fromSecretKey(secretKey);
+                    console.log(`[Solana Bridge] Loaded Payer: ${this.wallet.publicKey.toBase58()}`);
+                } else {
+                    // Just warn for now, don't crash if dev mode
+                    console.warn(`[Solana Bridge] Wallet file not found: ${config.solana.payerKeypairFile}`);
+                }
+
+                if (config.solana.tokenMint) {
+                    this.mintAddress = new PublicKey(config.solana.tokenMint);
+                    try {
+                        const mintInfo = await getMint(this.connection, this.mintAddress);
+                        this.decimals = mintInfo.decimals;
+                    } catch (e) { console.warn("Could not fetch mint info", e.message); }
+                }
             }
 
-            // Load Mint
-            this.mintAddress = new PublicKey(config.solana.tokenMint);
-            const mintInfo = await getMint(this.connection, this.mintAddress);
-            this.decimals = mintInfo.decimals;
-            console.log(`[Solana Bridge] Loaded Token Mint: ${this.mintAddress.toBase58()} (Decimals: ${this.decimals})`);
-
-            this.enabled = true;
-            console.log('[Solana Bridge] ✅ Ready for Payouts');
+            if (this.wallet && this.mintAddress) {
+                this.enabled = true;
+                console.log('[Solana Bridge] ✅ Ready for Payouts & Minting');
+            } else {
+                console.log('[Solana Bridge] ⚠️ Bridge initialized but missing Wallet or Mint. Disabled.');
+            }
 
         } catch (e) {
             console.error('[Solana Bridge] Initialization Failed:', e.message);
             this.enabled = false;
+        }
+    }
+
+    async mintZBTC(recipientAddress, amount) {
+        if (!this.enabled) {
+            throw new Error('Solana Bridge not enabled');
+        }
+
+        console.log(`[Solana Bridge] 🏭 Minting ${amount} zBTC to ${recipientAddress}`);
+
+        try {
+            const recipientPubkey = new PublicKey(recipientAddress);
+            const rawAmount = BigInt(amount * Math.pow(10, this.decimals));
+
+            // 1. Get/Create Destination ATA
+            const destATA = await getOrCreateAssociatedTokenAccount(
+                this.connection,
+                this.wallet, // Payer
+                this.mintAddress,
+                recipientPubkey
+            );
+
+            // 2. Mint To
+            const { mintTo } = require('@solana/spl-token');
+            const signature = await mintTo(
+                this.connection,
+                this.wallet, // Payer
+                this.mintAddress,
+                destATA.address, // Destination
+                this.wallet, // Authority
+                rawAmount
+            );
+
+            console.log(`[Solana Bridge] ✅ Mint Success: ${signature}`);
+            return signature;
+
+        } catch (e) {
+            console.error('[Solana Bridge] Mint Failed:', e);
+            throw e;
         }
     }
 
@@ -113,5 +171,4 @@ class SolanaBridge {
         }
     }
 }
-
 module.exports = new SolanaBridge();
