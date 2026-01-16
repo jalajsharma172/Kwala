@@ -45,16 +45,16 @@ This is the most critical and confusing concept. Think of it as a **Limbo Bar**.
 *   **Analogy**: Hitting the golf ball onto the green.
 *   **Why?** Small miners (CPUs) can't hit a hole-in-one. But they can hit the green frequently. The Pool counts these "on the green" shots (Shares) to calculate your reward.
 
+
 ---
 
 ## 3. The Software Roles
 
 ### 🧠 Bitcoin Core (`bitcoind`)
-*   **Role**: The Accountant & Rule Maker.
+*   **Role**: The Accountant & Rule Maker. Creates the "Block Template" (the puzzle) for the pool to solve.
 *   **What it does**:
     *   Downloads the entire Blockchain (history of all money).
     *   Validates transactions from all over the world.
-    *   Creates the "Block Template" (the puzzle) for the pool to solve.
     *   **Analogy**: The Bank Manager who verifies the checks.
 
 ### 🏊 The Pool Server (`Axon`)
@@ -62,9 +62,11 @@ This is the most critical and confusing concept. Think of it as a **Limbo Bar**.
 *   **What it does**:
     *   Talks to Bitcoin Core to get the latest puzzle.
     *   Distributes work to miners.
-    *   Checks "Shares" (partial solutions) from miners.
+    *   Checks "Shares" (partial solutions of the miners of solution of the puzzle) from miners.
     *   Calculates "Hashrate" (speed).
-    *   Pays rewards (sends zBTC via Solana).
+    *   **Hashrate** = (Number of Shares all miners submit) / (Time). It measureshow fast all miners are guessing.
+    * If a miner finds a block, the pool pays the miner a reward.
+    *   Pays rewards (sends zBTC via Solana) based on  PPLNS (Pay Per Last N Shares) Payment Scheme.
     *   **Analogy**: The Foreman at a construction site.
 
 ### ⛏️ The CPU Miner (`cpuminer`)
@@ -73,7 +75,21 @@ This is the most critical and confusing concept. Think of it as a **Limbo Bar**.
     *   Connects to the Pool.
     *   Takes the puzzle and starts guessing numbers (Hashing) as fast as possible.
     *   When it finds a result below the "Pool Difficulty", it sends it back ("I found a Share!").
+    *   The miner establishes a connection to a mining pool server (usually via the Stratum protocol).
+    *   The pool assigns work to the miner.
     *   **Analogy**: The guy swinging the pickaxe.
+
+### 📉 Visualizing "Below the Target"
+Why do we say "Below"?
+In mining, the "Target" is a number. The harder the difficulty, the **smaller** the target number becomes.
+
+**Example:**
+*   **Network Target**: `5` (You must roll a 1, 2, 3, or 4 to win). **Very Hard.**
+*   **Pool Target**: `500` (You must roll anything below 500 to get a Share). **Easy.**
+
+If you roll a `250`:
+*   It is **below** the Pool Target (500) -> ✅ **Valid Share!** (You get paid).
+*   It is **above** the Network Target (5) -> ❌ **Not a Block** (No Jackpot yet).
 
 ---
 

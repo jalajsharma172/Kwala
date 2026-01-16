@@ -33,6 +33,9 @@ graph TD
 > **[📘 READ THE DETAILED MINING GUIDE HERE](docs/MINING_GUIDE.md)**
 > Includes Bitcoin Core config, CPUMiner installation, and Solana Payout instructions.
 
+> **[🏆 DEMO DAY SETUP GUIDE](docs/DEMO_DAY_GUIDE.md)**
+> Networking, Firewall, and LAN configuration for face-to-face demo.
+
 1.  **Start Bitcoin Core (Testnet)**:
     ```bash
     bitcoind -testnet -daemon
