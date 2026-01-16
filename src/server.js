@@ -3,6 +3,8 @@ const stratumV1 = require('./stratum'); // Renamed for clarity, or keep as strat
 const stratumV2 = require('./stratum_v2_translator');
 const solanaBridge = require('./solana_bridge');
 const config = require('../config.json');
+const express = require('express');
+const cors = require('cors');
 
 async function main() {
     console.log('Starting Axon Pool Server...');
@@ -19,7 +21,30 @@ async function main() {
         stratumV1.start(); // Port 3333
         stratumV2.start(); // Port 3334
 
-        // 3. Main Loop: Poll for new block templates
+        // 4. Start API Server
+        const app = express();
+        app.use(cors());
+
+        app.get('/api/stats', (req, res) => {
+            const currentJob = jobs.currentJob || {};
+            res.json({
+                miners: stratumV1.miners.length + stratumV2.miners.length,
+                hashrate: "100 H/s", // Simulated/Static for MVP
+                blockHeight: currentJob.height || 0,
+                lastJobId: currentJob.jobId || null,
+                network: config.network,
+                poolAddress: config.pool.address,
+                solanaEnabled: solanaBridge.enabled,
+                solanaPayouts: 0 // TODO: Track in Rewards
+            });
+        });
+
+        const API_PORT = 3001;
+        app.listen(API_PORT, () => {
+            console.log(`API Server listening on port ${API_PORT}`);
+        });
+
+        // 5. Main Loop: Poll for new block templates
         console.log('Starting Block Template Polling...');
 
         const POLLING_INTERVAL = 1000; // 1 second for Regtest/Testnet

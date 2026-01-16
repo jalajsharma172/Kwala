@@ -30,6 +30,8 @@ graph TD
 ```
 
 ## Setup & Running
+> **[📘 READ THE DETAILED MINING GUIDE HERE](docs/MINING_GUIDE.md)**
+> Includes Bitcoin Core config, CPUMiner installation, and Solana Payout instructions.
 
 1.  **Start Bitcoin Core (Testnet)**:
     ```bash
