@@ -15,9 +15,14 @@ async function main() {
         // 1. Initialize Solana Bridge (Connect to Devnet)
         await solanaBridge.init();
 
+        // 1.5 Initialize Database
+        const db = require('./database');
+        await db.init();
+
         // 2. Initialize Job Manager (Connects to RPC, validates address)
         try {
             await jobs.init();
+            await shares.init(); // Load historical shares
         } catch (jobErr) {
             console.error("⚠️ [JobManager] Init Failed (Bitcoin RPC likely down). Mining disabled.");
             console.error(jobErr.message);
@@ -70,6 +75,23 @@ async function main() {
                 solanaEnabled: solanaBridge.enabled,
                 solanaPayouts: 0 // TODO: Track in Rewards
             });
+        });
+
+        // New Route: Miner Stats API (JSON)
+        app.get('/api/miner/:id', async (req, res) => {
+            const minerId = req.params.id;
+            try {
+                // Initialize DB if not already (it is at start, but good safety)
+
+                // Get Stats
+                const db = require('./database');
+                const stats = await db.getMinerStats(minerId);
+
+                res.json(stats);
+            } catch (e) {
+                console.error("Miner Stats Error:", e);
+                res.status(500).json({ error: "Error fetching miner stats" });
+            }
         });
 
         const API_PORT = 3001;

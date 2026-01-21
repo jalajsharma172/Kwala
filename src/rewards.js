@@ -1,5 +1,6 @@
 const BigNumber = require('bignumber.js');
 const solanaBridge = require('./solana_bridge');
+const db = require('./database');
 
 class RewardManager {
     constructor() {
@@ -56,6 +57,9 @@ class RewardManager {
                 // Trigger Instant Payout (Real Solana Bridge)
                 await solanaBridge.payoutSPL(minerData.solanaAddress, userReward.toNumber());
             }
+
+            // Log Reward to DB
+            db.addReward(mid, userReward.toNumber(), null).catch(err => console.error("DB Reward Error:", err));
         }
 
         // Reset Round

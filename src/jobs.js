@@ -47,6 +47,11 @@ class JobManager {
     }
 
     createJob(tmpl) {
+        if (!this.poolScriptPubKey) {
+            console.error("Pool ScriptPubKey not set. Job creation skipped.");
+            return null;
+        }
+
         const jobId = crypto.randomBytes(4).toString('hex');
 
         // 1. Calculate Block Reward (Subsidy + Fees)

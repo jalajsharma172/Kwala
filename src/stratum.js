@@ -129,6 +129,7 @@ class StratumServer {
         const success = jobApi.authorizeMiner(miner.apiMinerId, username, password);
 
         miner.authorized = success;
+        miner.username = username; // Store for stats
         console.log(`Miner authorized: ${username} (ID: ${miner.apiMinerId})`);
 
         // Send Difficulty (Required by most miners)

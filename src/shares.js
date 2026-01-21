@@ -4,6 +4,7 @@ const jobs = require('./jobs');
 const rpc = require('./rpc');
 const rewards = require('./rewards');
 const config = require('../config.json');
+const db = require('./database');
 
 class ShareManager {
     constructor() {
@@ -14,6 +15,24 @@ class ShareManager {
 
         // Hashrate Tracking: minerId -> Array of timestamps
         this.minerShares = {};
+    }
+
+    async init() {
+        // Load recent shares from DB (last 10 mins) to restore hashrate
+        try {
+            const tenMinsAgo = Date.now() - (10 * 60 * 1000);
+            const rows = await db.all('SELECT minerId, timestamp FROM shares WHERE timestamp > ?', [tenMinsAgo]);
+            console.log(`[ShareManager] Loaded ${rows.length} recent shares from DB.`);
+
+            for (const row of rows) {
+                if (!this.minerShares[row.minerId]) {
+                    this.minerShares[row.minerId] = [];
+                }
+                this.minerShares[row.minerId].push(row.timestamp);
+            }
+        } catch (e) {
+            console.error("Failed to load recent shares:", e);
+        }
     }
 
     getPoolHashrate() {
@@ -131,11 +150,15 @@ class ShareManager {
         }
 
         // Log Share per Miner
-        const minerId = miner.apiMinerId || miner.id || "unknown";
+        // Prioritize wallet (username) if available
+        const minerId = miner.wallet || miner.username || miner.apiMinerId || miner.id || "unknown";
         if (!this.minerShares[minerId]) {
             this.minerShares[minerId] = [];
         }
         this.minerShares[minerId].push(Date.now());
+
+        // Log to DB
+        db.addShare(minerId, jobId, 1.0).catch(err => console.error("DB Share Error:", err)); // Assuming diff 1 for now
 
         rewards.addShare(minerId);
 
